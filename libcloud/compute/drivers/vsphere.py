@@ -154,13 +154,14 @@ class VSphereNodeDriver(NodeDriver):
                 self._to_node(c, depth + 1)
             return
 
-       # if this is a vApp, it likely contains child VMs
-       # (vApps can nest vApps, but it is hardly a common usecase, so ignore that)
-       if isinstance(virtual_machine, vim.VirtualApp):
-          vmList = virtual_machine.vm
-          for c in vmList:
-             self._to_node(c, depth + 1)
-          return
+        # if this is a vApp, it likely contains child VMs
+        # (vApps can nest vApps, but it is hardly a common usecase,
+        # so ignore that)
+        if isinstance(virtual_machine, vim.VirtualApp):
+            vmList = virtual_machine.vm
+            for c in vmList:
+                self._to_node(c, depth + 1)
+            return
 
         summary = virtual_machine.summary
         name = summary.config.name
