@@ -23,6 +23,7 @@ Author: Markos Gogoulos -  mgogoulos@mist.io
 try:
     from pyVim import connect
     from pyVmomi import vmodl
+    from pyVmomi import vim
 except ImportError:
     raise ImportError('Missing "pyvmomi" dependency. You can install it '
                       'using pip - pip install pyvmomi')
@@ -132,16 +133,13 @@ class VSphereNodeDriver(NodeDriver):
         for child in children:
             if hasattr(child, 'vmFolder'):
                 datacenter = child
-            else:
-            # some other non-datacenter type object
-                continue
-            vm_folder = datacenter.vmFolder
-            vm_list = vm_folder.childEntity
+                vm_folder = datacenter.vmFolder
+                vm_list = vm_folder.childEntity
 
-            for virtual_machine in vm_list:
-                node = self._to_node(virtual_machine, 10)
-                if node:
-                    nodes.append(node)
+                for virtual_machine in vm_list:
+                    node = self._to_node(virtual_machine)
+                    if node:
+                        nodes.append(node)
         return nodes
 
     def _to_node(self, virtual_machine, depth=1):
@@ -155,6 +153,14 @@ class VSphereNodeDriver(NodeDriver):
             for c in vmList:
                 self._to_node(c, depth + 1)
             return
+
+       # if this is a vApp, it likely contains child VMs
+       # (vApps can nest vApps, but it is hardly a common usecase, so ignore that)
+       if isinstance(virtual_machine, vim.VirtualApp):
+          vmList = virtual_machine.vm
+          for c in vmList:
+             self._to_node(c, depth + 1)
+          return
 
         summary = virtual_machine.summary
         name = summary.config.name
